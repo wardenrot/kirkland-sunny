@@ -287,7 +287,7 @@ var PXMM = 96/25.4, MAXCH = 10000, KEY = "zheye.v1";
 var NOSTART = "，。、；：？！）》」』】〉’”…—,.;:?!)]}";
 var SHAPES = [["rect","直角"],["round","圆角"],["arch","圆拱"],["peak","尖顶"],["diag","斜切"],["step","阶梯"],["wave","波浪"],["rose","玫瑰"],["custom","自定"]];
 var MAXF = 16;
-var SAMPLE = "他把钥匙放在桌上。\n没有说话。\n\n窗外的有轨电车过去了一班。车灯扫过墙面，停了半秒，移走。\n\n“你可以走了。”\n\n对面的人没有动。他看着那把钥匙，看了很久。钥匙是铜的，齿很旧，磨得发亮。\n\n“我走了以后，”他说，“你把门锁上。”\n\n“我知道。”\n\n“两道都锁。”\n\n“我知道。”\n\n他站起来，拿了帽子。走到门口，又停住。手在门把上放了一会儿，没有回头。\n\n门关上了。\n\n屋里的人坐着，听脚步声下楼。一层，两层，三层。然后是街门。然后什么也没有。\n\n他伸手把钥匙拿起来，攥在手心里。铜是凉的。\n";
+var SAMPLE = "有一个幽灵在欧洲徘徊——共产主义的幽灵。旧欧洲的一切势力，教皇和沙皇，梅特涅和基佐，法国的激进派和德国的警察，都为围猎这个幽灵结成了神圣同盟。\n哪一个反对党，不曾被它当权的对手骂作共产党？又有哪一个反对党，不曾把共产主义这个烙印般的罪名，回敬给更进步的反对派，回敬给自己反动的敌人？\n\n从这一事实可以得出两点。\n共产主义已经被欧洲的一切势力公认为一种势力。\n现在是时候了：共产党人应当向全世界公开说明自己的观点、自己的目的、自己的意图，拿党自己的宣言，去对付关于共产主义幽灵的那个神话。\n为此，各国的共产党人聚集在伦敦，拟定了下面这份宣言，用英文、法文、德文、意大利文、弗拉芒文和丹麦文公布于世。\n\n一　资产者和无产者\n\n迄今为止，一切社会的历史都是阶级斗争的历史。\n自由民和奴隶，贵族和平民，领主和农奴，行会师傅和帮工，一句话，压迫者和被压迫者，始终彼此对立，进行着不间断的斗争，有时隐蔽，有时公开。每一次斗争的结局，不是整个社会受到革命的改造，就是斗争的各阶级同归于尽。\n";
 
 var S = {title:"",author:"",text:"",font:"Noto Serif SC",fs:9.5,lh:1.75,indent:true,pw:99,ph:210,pm:11,faces:0,paper:"#FBFAF6",
          start:"rose",end:"rect",depth:22,lines:true,bgop:35,zoom:60,blank:{},pngclip:true,covers:true,csub:"",btext:"",cv:{pos:"bot",align:"left",color:"dark"},bk:{pos:"mid",align:"center",color:"dark"},backpos:"last",cvimg:{x:50,y:50,z:100},bkimg:{x:50,y:50,z:100},dragimg:false,custom:null,customPrint:true,tol:40,smooth:3};
@@ -506,7 +506,7 @@ function layout(){
   var stage=$("stage");
   if(!S.text.trim() && !S.title && !S.faces){
     stage.innerHTML="<div class='empty'><h2>纸还是空的</h2><p>在正文框里贴入文字，折页会按字数自动加折。也可以先放一段示例看看版面。</p><button type='button' id='fillSample'>放入示例文字</button></div>";
-    $("fillSample").onclick=function(){ S.title="钥匙"; S.author="佚名"; S.text=SAMPLE; syncInputs(); run(); };
+    $("fillSample").onclick=function(){ S.title="共产党宣言"; S.author="马克思　恩格斯"; S.csub="一八四八年"; S.btext="示例文字据 1848 年德文原版试译\n原著已进入公有领域"; S.text=SAMPLE; syncInputs(); run(); };
     current={F:0,sheets:[],left:0}; stats(); return;
   }
   var r;
