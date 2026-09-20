@@ -236,11 +236,20 @@ input[type=file]{color:var(--ink-soft);font-size:13px}
       <input id="smooth" type="range" min="1" max="8" step="1">
       <label class="check"><input id="customPrint" type="checkbox"> 把这张图印在模切那一折上</label>
       <div id="freebox" class="custbox" hidden>
-        <p class="note" style="margin-top:6px">"自由"模切：上、下、外侧三条边都沿图形走，靠折线的一边保持直线。图可以随意移动、缩放，刀线跟着变。</p>
+        <p class="note" style="margin-top:6px">"自由"模切：上、下、外侧三条边沿图形走，靠折线的一边保持直线。图可以随意移动、缩放，刀线跟着变。</p>
         <div class="row3">
           <div><label for="freex">左右 <span id="freexv"></span></label><input id="freex" type="range" min="-100" max="100" step="1"></div>
           <div><label for="freey">上下 <span id="freeyv"></span></label><input id="freey" type="range" min="-100" max="100" step="1"></div>
           <div><label for="frees">大小 <span id="freesv"></span></label><input id="frees" type="range" min="30" max="400" step="5"></div>
+        </div>
+        <label for="freemode">取形方式</label>
+        <select id="freemode">
+          <option value="deco">贴边装饰：这一折保持方形，图形从边上探出去（推荐）</option>
+          <option value="full">整版取形：图形就是这一折的形状</option>
+        </select>
+        <div id="bandbox">
+          <label for="band">底板内缩 <span id="bandv"></span>（上、下、外侧各让出这么多，给图形探出去的空间）</label>
+          <input id="band" type="range" min="0" max="40" step="1">
         </div>
         <label for="grow">刀线外扩 <span id="growv"></span>（图形外留一圈白边）</label>
         <input id="grow" type="range" min="0" max="5" step="0.5">
@@ -297,7 +306,7 @@ var MAXF = 16;
 var SAMPLE = "有一个幽灵在欧洲徘徊——共产主义的幽灵。旧欧洲的一切势力，教皇和沙皇，梅特涅和基佐，法国的激进派和德国的警察，都为围猎这个幽灵结成了神圣同盟。\n哪一个反对党，不曾被它当权的对手骂作共产党？又有哪一个反对党，不曾把共产主义这个烙印般的罪名，回敬给更进步的反对派，回敬给自己反动的敌人？\n\n从这一事实可以得出两点。\n共产主义已经被欧洲的一切势力公认为一种势力。\n现在是时候了：共产党人应当向全世界公开说明自己的观点、自己的目的、自己的意图，拿党自己的宣言，去对付关于共产主义幽灵的那个神话。\n为此，各国的共产党人聚集在伦敦，拟定了下面这份宣言，用英文、法文、德文、意大利文、弗拉芒文和丹麦文公布于世。\n\n一　资产者和无产者\n\n迄今为止，一切社会的历史都是阶级斗争的历史。\n自由民和奴隶，贵族和平民，领主和农奴，行会师傅和帮工，一句话，压迫者和被压迫者，始终彼此对立，进行着不间断的斗争，有时隐蔽，有时公开。每一次斗争的结局，不是整个社会受到革命的改造，就是斗争的各阶级同归于尽。\n";
 
 var S = {title:"",author:"",text:"",font:"Noto Serif SC",fs:9.5,lh:1.75,indent:true,pw:99,ph:210,pm:11,faces:0,paper:"#FBFAF6",
-         start:"rose",end:"rect",depth:22,lines:true,bgop:35,zoom:60,blank:{},pngclip:true,covers:true,csub:"",btext:"",cv:{pos:"bot",align:"left",color:"dark"},bk:{pos:"mid",align:"center",color:"dark"},backpos:"last",cvimg:{x:50,y:50,z:100},bkimg:{x:50,y:50,z:100},dragimg:false,vertical:false,free:{x:0,y:0,s:100},grow:1.5,custom:null,customPrint:true,tol:40,smooth:3};
+         start:"rose",end:"rect",depth:22,lines:true,bgop:35,zoom:60,blank:{},pngclip:true,covers:true,csub:"",btext:"",cv:{pos:"bot",align:"left",color:"dark"},bk:{pos:"mid",align:"center",color:"dark"},backpos:"last",cvimg:{x:50,y:50,z:100},bkimg:{x:50,y:50,z:100},dragimg:false,vertical:false,free:{x:0,y:0,s:100},freeMode:"deco",band:12,grow:1.5,custom:null,customPrint:true,tol:40,smooth:3};
 var customMask = null, customFull = "", maskSeq = 0;
 var bgData = "", customImg = null, customSrc = null, coverImg = "", backImg = "", coverDim = null, backDim = null;
 var $ = function(id){return document.getElementById(id);};
@@ -396,7 +405,7 @@ function inset(side,idx,F){
 }
 /* ---------- 自由模切：栅格取形 → 描边 → 平滑 ---------- */
 var CELL=0.25, geoCache={};
-function freeKey(){ return [S.pw,S.ph,S.pm,S.free.x,S.free.y,S.free.s,S.grow,maskSeq].join("|"); }
+function freeKey(){ return [S.pw,S.ph,S.pm,S.free.x,S.free.y,S.free.s,S.grow,S.freeMode,S.band,maskSeq].join("|"); }
 function freeMask(){ /* 规范朝向：外侧在左，折线在右 */
   if(!customMask) return null;
   var key=freeKey(); if(geoCache.fk===key) return geoCache.fm;
@@ -415,9 +424,17 @@ function freeMask(){ /* 规范朝向：外侧在左，折线在右 */
   for(j=0;j<hc;j++){ outer[j]=-1; rmax[j]=-1; for(i=0;i<wc;i++) if(sil[j*wc+i]){ if(outer[j]<0) outer[j]=i; rmax[j]=i; } if(outer[j]>=0) any=true; }
   for(i=0;i<wc;i++){ top[i]=-1; bot[i]=-1; for(j=0;j<hc;j++) if(sil[j*wc+i]){ if(top[i]<0) top[i]=j; bot[i]=j; } }
   var out=null;
-  if(any){
+  if(S.freeMode!=="full"){
+    /* 贴边装饰：内缩后的方形底板 ∪ 图形。图再小、放得再偏，这一折也不会缺 */
+    var bd=Math.round(Math.min(S.band,S.pw*0.6,S.ph*0.3)/CELL);
+    for(j=0;j<hc;j++) for(i=0;i<wc;i++) if(sil[j*wc+i] || (i>=bd && j>=bd && j<hc-bd)) m[j*wc+i]=1;
+    any=true;
+  } else if(any){
     for(j=0;j<hc;j++){ if(outer[j]<0) continue; for(i=outer[j];i<wc;i++){ if(i>rmax[j] || (top[i]>=0 && top[i]<=j && j<=bot[i])) m[j*wc+i]=1; } }
-    out={m:m,wc:wc,hc:hc,safe:safeRect(m,wc,hc)};
+  }
+  if(any){
+    var cnt=0; for(i=0;i<wc*hc;i++) cnt+=m[i];
+    out={m:m,wc:wc,hc:hc,safe:safeRect(m,wc,hc),ratio:cnt/(wc*hc)};
   }
   geoCache.fk=key; geoCache.fm=out; return out;
 }
@@ -688,6 +705,7 @@ function stats(){
   var w=$("warn"), msgs=[];
   if(n>MAXCH) msgs.push("正文超过一万字，超出部分仍会排入，但折数会很多。");
   if(current.left) msgs.push("还有约 "+current.left+" 字排不下。点 + 加折，或勾选自动。");
+  if(customMask && (S.start==="free"||S.end==="free") && S.freeMode==="full"){ var fmw=freeMask(); if(!fmw) msgs.push("自由模切：图形不在这一折里，这一折没有纸。把图移回来。"); else if(fmw.ratio<0.4) msgs.push("自由模切：这一折只剩约 "+Math.round(fmw.ratio*100)+"% 的纸。放大图形，或把取形方式改成贴边装饰。"); }
   w.hidden=!msgs.length; w.textContent=msgs.join(" ");
   $("sFaces").textContent=current.F||"–"; $("sPanels").textContent=current.F?current.F*2:"–";
   $("fAuto").checked=!S.faces;
@@ -740,6 +758,7 @@ function syncInputs(){
   $("vertical").checked=!!S.vertical; $("freex").value=S.free.x; $("freey").value=S.free.y; $("frees").value=S.free.s; $("grow").value=S.grow;
   $("freexv").textContent=S.free.x+"%"; $("freeyv").textContent=S.free.y+"%"; $("freesv").textContent=S.free.s+"%"; $("growv").textContent=S.grow+" mm";
   $("freebox").hidden=!(S.start==="free"||S.end==="free"); $("dragimg2").checked=!!S.dragimg;
+  $("freemode").value=S.freeMode; $("band").value=S.band; $("bandv").textContent=S.band+" mm"; $("bandbox").hidden=S.freeMode==="full";
   [["cv","cvimg"],["bk","bkimg"]].forEach(function(t){ $(t[0]+"x").value=S[t[1]].x; $(t[0]+"y").value=S[t[1]].y; $(t[0]+"z").value=S[t[1]].z; }); $("dragimg").checked=!!S.dragimg;
   $("pngclip").checked=!!S.pngclip;
   $("covers").checked=!!S.covers; $("cvbox").hidden=!S.covers; $("csub").value=S.csub; $("btext").value=S.btext; $("backpos").value=S.backpos;
@@ -797,6 +816,8 @@ function bind(){
   $("dragimg2").onchange=function(){ S.dragimg=this.checked; $("dragimg").checked=S.dragimg; run(); };
   $("vertical").onchange=function(){ S.vertical=this.checked; S.blank={}; run(); };
   [["freex","x","%"],["freey","y","%"],["frees","s","%"]].forEach(function(t){ $(t[0]).oninput=function(){ S.free[t[1]]=+this.value; $(t[0]+"v").textContent=this.value+t[2]; document.querySelectorAll(".freeimg").forEach(placeFree); later(); }; });
+  $("freemode").onchange=function(){ S.freeMode=this.value; $("bandbox").hidden=S.freeMode==="full"; run(); };
+  $("band").oninput=function(){ S.band=+this.value; $("bandv").textContent=S.band+" mm"; later(); };
   $("grow").oninput=function(){ S.grow=+this.value; $("growv").textContent=S.grow+" mm"; later(); };
   $("coverClear").onclick=function(){ coverImg=""; coverDim=null; $("coverFile").value=""; run(); };
   $("backClear").onclick=function(){ backImg=""; backDim=null; $("backFile").value=""; run(); };
