@@ -345,7 +345,7 @@ var SHEET_CSS =
 ".panel .cutwrap{position:absolute;inset:0;overflow:hidden;pointer-events:none}"+
 ".panel .freeimg{position:absolute;height:auto;max-width:none}"+
 ".panel .cvimg{background-repeat:no-repeat}"+
-".panel .cmark{position:absolute;left:0;right:0;bottom:6mm;text-align:center;line-height:1.15;pointer-events:none}"+
+".panel .cmark{position:absolute;left:0;right:0;bottom:6mm;display:flex;flex-direction:column;align-items:center;white-space:nowrap;text-align:center;line-height:1.15;pointer-events:none;transform-origin:50% 100%}"+
 ".cmark .lg{font-family:'Pinyon Script','Snell Roundhand','Apple Chancery',cursive;font-size:16pt;font-weight:400}"+
 ".cmark .ln{font-family:'Noto Sans SC',sans-serif;font-size:5.5pt;letter-spacing:.14em;margin-top:.6mm}"+
 ".cmark.c-dark{color:#141414}.cmark.c-light{color:#fff;text-shadow:0 0 .5em rgba(0,0,0,.7)}"+
@@ -559,7 +559,7 @@ function buildSheet(side,F,clip){
       ct.className="cvtext p-"+o.pos+" a-"+o.align+" c-"+o.color+(S.vertical?" v":"");
       if(role==="cover") ct.innerHTML="<div>"+(S.title?"<h1>"+esc(S.title)+"</h1>":"")+(S.csub?"<div class='sub'>"+esc(S.csub)+"</div>":"")+(S.author?"<div class='by'>"+esc(S.author)+"</div>":"")+"</div>";
       else ct.innerHTML="<div class='bk'>"+S.btext.replace(/\r/g,"").split("\n").filter(function(l){return l.trim();}).map(function(l){return "<p>"+esc(l.trim())+"</p>";}).join("")+"</div>";
-      p.appendChild(ct); if(marked) p.appendChild(markEl(S.bk.color)); sh.appendChild(p); bodies.push(null); continue;
+      p.appendChild(ct); if(marked) p.appendChild(markEl(S.bk.color,pad4)); sh.appendChild(p); bodies.push(null); continue;
     }
     if(side===0 && i===(S.vertical?F-1:0) && (S.title||S.author)){
       var t=document.createElement("div"); t.className="ttl";
@@ -567,13 +567,17 @@ function buildSheet(side,F,clip){
       p.appendChild(t);
     }
     var body=document.createElement("div"); body.className="body"+(S.vertical?" v":""); p.appendChild(body);
-    if(marked) p.appendChild(markEl("dark"));
+    if(marked) p.appendChild(markEl("dark",pad4));
     sh.appendChild(p); bodies.push(body);
   }
   return {el:sh,bodies:bodies};
 }
-function markEl(color){
-  var m=document.createElement("div"); m.className="cmark c-"+color;
+function markEl(color,pad){
+  /* 版权标钉在"安全区"里：安全区是模切后确定还有纸的那块矩形，所以怎么切都切不到它 */
+  var m=document.createElement("div"); m.className="cmark c-"+color; pad=pad||{t:0,r:0,b:0,l:0};
+  var aw=S.pw-2*S.pm-pad.l-pad.r, k=Math.max(0.3,Math.min(1,aw/60));
+  m.style.left=(S.pm+pad.l)+"mm"; m.style.right=(S.pm+pad.r)+"mm"; m.style.bottom=(S.pm+pad.b)+"mm";
+  if(k<1) m.style.transform="scale("+k.toFixed(3)+")";
   m.innerHTML="<div class='lg'>Kirkland &amp; Sunshine</div><div class='ln'>\u00A9 "+new Date().getFullYear()+" KIRKLAND &amp; SUNSHINE \u00B7 ALL RIGHTS RESERVED</div>";
   return m;
 }
