@@ -283,7 +283,7 @@ input[type=file]{color:var(--ink-soft);font-size:13px}
         <button id="expPngB" type="button" class="ghost">导出 PNG 反面</button>
       </div>
       <label class="check"><input id="pngclip" type="checkbox"> PNG 按模切裁形，刀线外透明（看成品效果用；交印厂请关掉）</label>
-      <p class="note">印刷稿用浏览器打开，打印为 PDF，纸张尺寸（含出血）已写进文件，边距选"无"。印刷稿不裁形，刀线另存一层，两份坐标系一致，交印厂时一起给。</p>
+      <p class="note">印刷稿用浏览器打开，打印为 PDF，纸张尺寸（含出血）已写进文件，边距选"无"，并勾选"背景图形"（Safari 叫"打印背景"），否则底图和封面图不会印出来。印刷稿不裁形，刀线另存一层，两份坐标系一致，交印厂时一起给。</p>
       <p class="note" id="expMsg" role="status"></p>
       <div class="btns"><button class="ghost" id="reset" type="button">清空全部</button></div>
     </fieldset>
@@ -814,7 +814,7 @@ function bind(){
   $("depth").oninput=function(){ S.depth=+this.value; $("depthv").textContent=S.depth+"%"; later(); };
   $("bgop").oninput=function(){ S.bgop=+this.value; $("bgopv").textContent=S.bgop+"%"; persist();
     document.querySelectorAll(".bgimg").forEach(function(b){ b.style.opacity=S.bgop/100; }); };
-  $("bgfile").onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ bgData=rd.result; run(); }; rd.readAsDataURL(f); };
+  $("bgfile").onchange=function(){ pickImage(this,function(d){ bgData=d; run(); }); };
   $("covers").onchange=function(){ S.covers=this.checked; $("cvbox").hidden=!S.covers; run(); };
   ["csub","btext"].forEach(function(k){ $(k).addEventListener("input",function(){ S[k]=this.value; later(); }); });
   $("backpos").onchange=function(){ S.backpos=this.value; run(); };
