@@ -218,6 +218,12 @@ input[type=file]{color:var(--ink-soft);font-size:13px}
       <p class="note">折数在预览上方加减，最多每面 16 折。加一折，正反各多一版。每版下方的按钮可把该版设为留白，留给插图。</p>
       <label for="paper">纸色</label>
       <input id="paper" type="text" placeholder="#FBFAF6">
+      <div class="row">
+        <div><label for="bleed">出血 mm（印厂一般要 3）</label><input id="bleed" type="number" min="0" max="6" step="0.5"></div>
+        <div><label for="marks">裁切线</label><label class="check" style="margin-top:8px"><input id="marks" type="checkbox"> 印刷稿加角线</label></div>
+      </div>
+      <label class="check"><input id="showbleed" type="checkbox"> 预览里显示出血区（不裁形，看底图和封面有没有铺满）</label>
+      <p class="note">出血区里的纸色、底图、封面图、自由模切的图会自动向外延伸。正文和版权标不动。</p>
     </fieldset>
 
     <fieldset>
@@ -277,7 +283,7 @@ input[type=file]{color:var(--ink-soft);font-size:13px}
         <button id="expPngB" type="button" class="ghost">导出 PNG 反面</button>
       </div>
       <label class="check"><input id="pngclip" type="checkbox"> PNG 按模切裁形，刀线外透明（看成品效果用；交印厂请关掉）</label>
-      <p class="note">印刷稿用浏览器打开，打印为 PDF，纸张尺寸已写进文件，边距选"无"。印刷稿不裁形，刀线另存一层，交印厂时两份一起给。</p>
+      <p class="note">印刷稿用浏览器打开，打印为 PDF，纸张尺寸（含出血）已写进文件，边距选"无"。印刷稿不裁形，刀线另存一层，两份坐标系一致，交印厂时一起给。</p>
       <p class="note" id="expMsg" role="status"></p>
       <div class="btns"><button class="ghost" id="reset" type="button">清空全部</button></div>
     </fieldset>
@@ -306,7 +312,7 @@ var MAXF = 16;
 var SAMPLE = "有一个幽灵在欧洲徘徊——共产主义的幽灵。旧欧洲的一切势力，教皇和沙皇，梅特涅和基佐，法国的激进派和德国的警察，都为围猎这个幽灵结成了神圣同盟。\n哪一个反对党，不曾被它当权的对手骂作共产党？又有哪一个反对党，不曾把共产主义这个烙印般的罪名，回敬给更进步的反对派，回敬给自己反动的敌人？\n\n从这一事实可以得出两点。\n共产主义已经被欧洲的一切势力公认为一种势力。\n现在是时候了：共产党人应当向全世界公开说明自己的观点、自己的目的、自己的意图，拿党自己的宣言，去对付关于共产主义幽灵的那个神话。\n为此，各国的共产党人聚集在伦敦，拟定了下面这份宣言，用英文、法文、德文、意大利文、弗拉芒文和丹麦文公布于世。\n\n一　资产者和无产者\n\n迄今为止，一切社会的历史都是阶级斗争的历史。\n自由民和奴隶，贵族和平民，领主和农奴，行会师傅和帮工，一句话，压迫者和被压迫者，始终彼此对立，进行着不间断的斗争，有时隐蔽，有时公开。每一次斗争的结局，不是整个社会受到革命的改造，就是斗争的各阶级同归于尽。\n";
 
 var S = {title:"",author:"",text:"",font:"Noto Serif SC",fs:9.5,lh:1.75,indent:true,pw:99,ph:210,pm:11,faces:0,paper:"#FBFAF6",
-         start:"rose",end:"rect",depth:22,lines:true,bgop:35,zoom:60,blank:{},pngclip:true,covers:true,csub:"",btext:"",cv:{pos:"bot",align:"left",color:"dark"},bk:{pos:"mid",align:"center",color:"dark"},backpos:"last",cvimg:{x:50,y:50,z:100},bkimg:{x:50,y:50,z:100},dragimg:false,vertical:false,free:{x:0,y:0,s:100},freeMode:"deco",band:12,grow:1.5,custom:null,customPrint:true,tol:40,smooth:3};
+         start:"rose",end:"rect",depth:22,lines:true,bgop:35,zoom:60,blank:{},pngclip:true,covers:true,csub:"",btext:"",cv:{pos:"bot",align:"left",color:"dark"},bk:{pos:"mid",align:"center",color:"dark"},backpos:"last",cvimg:{x:50,y:50,z:100},bkimg:{x:50,y:50,z:100},dragimg:false,bleed:3,marks:true,showBleed:false,vertical:false,free:{x:0,y:0,s:100},freeMode:"deco",band:12,grow:1.5,custom:null,customPrint:true,tol:40,smooth:3};
 var customMask = null, customFull = "", maskSeq = 0;
 var bgData = "", customImg = null, customSrc = null, coverImg = "", backImg = "", coverDim = null, backDim = null;
 var $ = function(id){return document.getElementById(id);};
@@ -316,8 +322,9 @@ function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e)
 
 /* ---------- 纸面共用样式：预览和导出都用这一份 ---------- */
 var SHEET_CSS =
-".sheet{position:relative;display:flex;overflow:hidden;background:var(--sheet-paper,#FBFAF6);color:#141414}"+
-".sheet .bgimg{position:absolute;inset:0;background-size:cover;background-position:center}"+
+".bleed{position:relative;overflow:hidden;background:var(--sheet-paper,#FBFAF6);color:#141414}"+
+".bleed .bgimg{position:absolute;inset:0;background-size:cover;background-position:center}"+
+".sheet{position:absolute;display:flex;overflow:visible;background:var(--sheet-paper,#FBFAF6);color:#141414}"+
 ".panel{position:relative;flex:none;display:flex;flex-direction:column;box-sizing:border-box}"+
 ".panel .ttl{flex:none;margin:0 0 1.6em}"+
 ".panel .ttl h1{font-weight:900;font-size:2.1em;line-height:1.25;margin:0;letter-spacing:.02em}"+
@@ -328,7 +335,7 @@ var SHEET_CSS =
 ".panel .body p.gap{height:1em}"+
 ".panel .cutimg{position:absolute;left:0;top:0;width:100%;height:auto;pointer-events:none}"+
 ".panel .ttl,.panel .body{position:relative}"+
-".panel.cv{overflow:hidden}"+
+".panel.cv{overflow:visible}"+
 ".panel .cvimg{position:absolute;inset:0;background-size:cover;background-position:center}"+
 ".panel .cvtext{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}"+
 ".cvtext.p-top{justify-content:flex-start}.cvtext.p-mid{justify-content:center}.cvtext.p-bot{justify-content:flex-end}"+
@@ -528,12 +535,15 @@ function pathD(pts){ return pts.map(function(p,i){return (i?"L":"M")+p[0].toFixe
 /* ---------- 建纸、灌字 ---------- */
 function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
 function buildSheet(side,F,clip){
+  var BL=bleedMM(), blw=document.createElement("div"); blw.className="bleed";
+  blw.style.cssText="width:"+(F*S.pw+2*BL)+"mm;height:"+(S.ph+2*BL)+"mm;--sheet-paper:"+paperColor()+";font-family:'"+S.font+"','Noto Serif SC',serif;font-size:"+S.fs+"pt;line-height:"+S.lh;
+  if(bgData){ var b=document.createElement("div"); b.className="bgimg"; b.style.backgroundImage="url("+bgData+")"; b.style.opacity=S.bgop/100; blw.appendChild(b); }
   var sh=document.createElement("div"); sh.className="sheet";
-  sh.style.cssText="width:"+(F*S.pw)+"mm;height:"+S.ph+"mm;--sheet-paper:"+paperColor()+";font-family:'"+S.font+"','Noto Serif SC',serif;font-size:"+S.fs+"pt;line-height:"+S.lh;
-  if(bgData){ var b=document.createElement("div"); b.className="bgimg"; b.style.backgroundImage="url("+bgData+")"; b.style.opacity=S.bgop/100; sh.appendChild(b); }
-  if(clip){
-    var tw=F*S.pw, poly=sheetPoints(side,F).map(function(p){return (p[0]/tw*100).toFixed(3)+"% "+(p[1]/S.ph*100).toFixed(3)+"%";}).join(",");
-    sh.style.clipPath="polygon("+poly+")";
+  sh.style.cssText="left:"+BL+"mm;top:"+BL+"mm;width:"+(F*S.pw)+"mm;height:"+S.ph+"mm;background:transparent";
+  blw.appendChild(sh);
+  if(clip && !S.showBleed){
+    var poly=sheetPoints(side,F).map(function(p){return (p[0]+BL).toFixed(3)+"mm "+(p[1]+BL).toFixed(3)+"mm";}).join(",");
+    blw.style.clipPath="polygon("+poly+")";
   }
   var bodies=[];
   for(var i=0;i<F;i++){
@@ -542,12 +552,12 @@ function buildSheet(side,F,clip){
     p.style.cssText="width:"+S.pw+"mm;height:"+S.ph+"mm;padding:"+(M0+pad4.t)+"mm "+(M0+pad4.r)+"mm "+(M0+pad4.b)+"mm "+(M0+pad4.l)+"mm";
     var role = S.covers ? roleOf(side,i,F) : null;
     var eA=ends(0), spA = i===0 ? eA.L : (i===F-1 ? eA.R : null), fa = side===0 && S.customPrint && customFull && customMask && spA && spA[0]==="free";
-    if(role){ p.className+=" cv"; var csrc = role==="cover"?coverImg:backImg; if(csrc){ var ci=document.createElement("div"); ci.className="cvimg"; ci.style.backgroundImage="url("+csrc+")"; ci.setAttribute("data-role",role); cropStyle(ci,role); p.appendChild(ci); if(S.dragimg && clip && !fa) enableDrag(p,ci,role); } }
+    if(role){ p.className+=" cv"; var csrc = role==="cover"?coverImg:backImg; if(csrc){ var ci=document.createElement("div"); ci.className="cvimg"; ci.style.backgroundImage="url("+csrc+")"; ci.setAttribute("data-role",role); cropStyle(ci,role); bleedOut(ci,i,F); p.appendChild(ci); if(S.dragimg && clip && !fa) enableDrag(p,ci,role); } }
     var marked = S.covers ? role==="back" : (side===1 && i===(S.vertical?0:F-1));
     if(marked) p.className+=" marked";
     if(fa){
       var right=i===F-1, wrap=document.createElement("div"); wrap.className="cutwrap"; if(right) wrap.style.transform="scaleX(-1)";
-      var fi=document.createElement("img"); fi.className="freeimg"; fi.alt=""; fi.src=customFull; placeFree(fi); wrap.appendChild(fi); p.appendChild(wrap);
+      var fi=document.createElement("img"); fi.className="freeimg"; fi.alt=""; fi.src=customFull; placeFree(fi); wrap.appendChild(fi); bleedOut(wrap,i,F); p.appendChild(wrap);
       if(S.dragimg && clip) enableFreeDrag(p,fi,right);
     }
     if(side===0 && S.customPrint && customImg && S.custom){
@@ -570,7 +580,7 @@ function buildSheet(side,F,clip){
     if(marked) p.appendChild(markEl("dark",pad4));
     sh.appendChild(p); bodies.push(body);
   }
-  return {el:sh,bodies:bodies};
+  return {el:blw,sheet:sh,bodies:bodies};
 }
 function markEl(color,pad){
   /* 版权标钉在"安全区"里：安全区是模切后确定还有纸的那块矩形，所以怎么切都切不到它 */
@@ -606,6 +616,9 @@ function roleOf(side,i,F){
   else if(side===1 && i===last) return "back";
   return null;
 }
+function bleedOut(el,i,F){ /* 边上那些版的图向出血区延伸 */
+  var BL=bleedMM(); if(!BL) return; el.style.top=-BL+"mm"; el.style.bottom=-BL+"mm"; if(i===0) el.style.left=-BL+"mm"; if(i===F-1) el.style.right=-BL+"mm";
+}
 function placeFree(im){ im.style.left=(S.pw*S.free.x/100)+"mm"; im.style.top=(S.ph*S.free.y/100)+"mm"; im.style.width=(S.pw*S.free.s/100)+"mm"; }
 function enableFreeDrag(p,im,right){
   p.className+=" cv drag"; var st=null;
@@ -615,6 +628,7 @@ function enableFreeDrag(p,im,right){
   function end(){ if(st){ st=null; S.free.x=Math.round(S.free.x); S.free.y=Math.round(S.free.y); syncInputs(); run(); } }
   p.addEventListener("pointerup",end); p.addEventListener("pointercancel",end);
 }
+function bleedMM(){ return Math.max(0,Math.min(6,+S.bleed||0)); }
 function paperColor(){ return /^#[0-9a-fA-F]{3,8}$/.test(S.paper) ? S.paper : "#FBFAF6"; }
 function over(b){ return b.scrollHeight > b.clientHeight+0.5 || b.scrollWidth > b.clientWidth+0.5; }
 
@@ -657,7 +671,7 @@ function layoutWith(F,host){
     var lab=document.createElement("p"); lab.className="sidelabel"; lab.textContent=i?"反面（沿短边翻转后）":"正面";
     var box=document.createElement("div"); box.className="scalebox";
     var sc=document.createElement("div"); sc.className="scaler"; sc.appendChild(s.el); box.appendChild(sc);
-    var cells=document.createElement("div"); cells.className="cells";
+    var cells=document.createElement("div"); cells.className="cells"; cells.style.paddingLeft=(bleedMM()*PXMM*S.zoom/100)+"px";
     for(var j=0;j<F;j++){ (function(j){
       var key=i+":"+j, c=document.createElement("button"), no=i*F+(S.vertical?F-1-j:j)+1; c.type="button";
       c.setAttribute("aria-pressed",String(!!S.blank[key])); c.textContent=no+(S.blank[key]?" 留白":" 排字");
@@ -688,17 +702,18 @@ function overlay(){
   current.boxes.forEach(function(bx){
     var old=bx.box.querySelector(".overlay"); if(old) old.remove();
     if(!S.lines) return;
-    var F=current.F, tw=F*S.pw, z=S.zoom/100;
-    var svg='<svg class="overlay" xmlns="http://www.w3.org/2000/svg" width="'+(tw*PXMM*z)+'" height="'+(S.ph*PXMM*z)+'" viewBox="0 0 '+tw+' '+S.ph+'">';
-    for(var i=1;i<F;i++) svg+='<line x1="'+i*S.pw+'" y1="0" x2="'+i*S.pw+'" y2="'+S.ph+'" stroke="#00A0D6" stroke-width="0.35" stroke-dasharray="2 1.5"/>';
-    svg+='<path d="'+pathD(sheetPoints(bx.side,F))+'" fill="none" stroke="#E6007E" stroke-width="0.45"/></svg>';
+    var F=current.F, tw=F*S.pw, z=S.zoom/100, BL=bleedMM(), TW=tw+2*BL, TH=S.ph+2*BL, dp=pathD(sheetPoints(bx.side,F));
+    var svg='<svg class="overlay" xmlns="http://www.w3.org/2000/svg" width="'+(TW*PXMM*z)+'" height="'+(TH*PXMM*z)+'" viewBox="0 0 '+TW+' '+TH+'"><g transform="translate('+BL+' '+BL+')">';
+    if(BL) svg+='<path d="M'+(-BL)+' '+(-BL)+'H'+(tw+BL)+'V'+(S.ph+BL)+'H'+(-BL)+'Z '+dp+'" fill="rgba(230,0,126,.13)" fill-rule="evenodd" stroke="#E6007E" stroke-width="0.25" stroke-dasharray="1 1"/>';
+    for(var i=1;i<F;i++) svg+='<line x1="'+i*S.pw+'" y1="'+(-BL)+'" x2="'+i*S.pw+'" y2="'+(S.ph+BL)+'" stroke="#00A0D6" stroke-width="0.35" stroke-dasharray="2 1.5"/>';
+    svg+='<path d="'+dp+'" fill="none" stroke="#E6007E" stroke-width="0.45"/></g></svg>';
     bx.box.insertAdjacentHTML("beforeend",svg);
   });
 }
 function applyZoom(){
   if(!current.boxes) return;
-  var z=S.zoom/100, w=current.F*S.pw*PXMM, h=S.ph*PXMM;
-  current.boxes.forEach(function(bx){ bx.box.style.width=(w*z)+"px"; bx.box.style.height=(h*z)+"px"; bx.sc.style.transform="scale("+z+")";
+  var z=S.zoom/100, BL=bleedMM(), w=(current.F*S.pw+2*BL)*PXMM, h=(S.ph+2*BL)*PXMM;
+  current.boxes.forEach(function(bx){ bx.box.style.width=(w*z)+"px"; bx.box.style.height=(h*z)+"px"; bx.sc.style.transform="scale("+z+")"; bx.cells.style.paddingLeft=(BL*PXMM*z)+"px";
     Array.prototype.forEach.call(bx.cells.children,function(c){ c.style.width=(S.pw*PXMM*z)+"px"; }); });
   $("zoom").value=S.zoom; $("zoomv").textContent=S.zoom+"%";
   overlay();
@@ -764,7 +779,7 @@ function syncInputs(){
   $("freebox").hidden=!(S.start==="free"||S.end==="free"); $("dragimg2").checked=!!S.dragimg;
   $("freemode").value=S.freeMode; $("band").value=S.band; $("bandv").textContent=S.band+" mm"; $("bandbox").hidden=S.freeMode==="full";
   [["cv","cvimg"],["bk","bkimg"]].forEach(function(t){ $(t[0]+"x").value=S[t[1]].x; $(t[0]+"y").value=S[t[1]].y; $(t[0]+"z").value=S[t[1]].z; }); $("dragimg").checked=!!S.dragimg;
-  $("pngclip").checked=!!S.pngclip;
+  $("pngclip").checked=!!S.pngclip; $("bleed").value=S.bleed; $("marks").checked=!!S.marks; $("showbleed").checked=!!S.showBleed;
   $("covers").checked=!!S.covers; $("cvbox").hidden=!S.covers; $("csub").value=S.csub; $("btext").value=S.btext; $("backpos").value=S.backpos;
   $("cvpos").value=S.cv.pos; $("cvalign").value=S.cv.align; $("cvcolor").value=S.cv.color; $("bkpos").value=S.bk.pos; $("bkalign").value=S.bk.align; $("bkcolor").value=S.bk.color;
   ["title","author","text","font","fs","lh","pw","ph","pm","paper"].forEach(function(k){ $(k).value=S[k]; });
@@ -790,6 +805,9 @@ function bind(){
   $("cutfile").onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader();
     rd.onload=function(){ var im=new Image(); im.onload=function(){ customSrc=im; processCustom(im,true); }; im.onerror=function(){ $("cutMsg").textContent="这张图读不出来。换一张 PNG 或 JPG。"; }; im.src=rd.result; };
     rd.readAsDataURL(f); };
+  $("bleed").onchange=function(){ S.bleed=num(this.value,0,6,3); this.value=S.bleed; run(); };
+  $("marks").onchange=function(){ S.marks=this.checked; persist(); };
+  $("showbleed").onchange=function(){ S.showBleed=this.checked; run(); };
   $("paper").onchange=function(){ S.paper=this.value.trim(); run(); };
   $("indent").onchange=function(){ S.indent=this.checked; run(); };
   $("lines").onchange=function(){ S.lines=this.checked; persist(); overlay(); };
@@ -827,7 +845,7 @@ function bind(){
   $("backClear").onclick=function(){ backImg=""; backDim=null; $("backFile").value=""; run(); };
   $("bgclear").onclick=function(){ bgData=""; $("bgfile").value=""; run(); };
   $("zoom").oninput=function(){ S.zoom=+this.value; persist(); applyZoom(); };
-  $("fit").onclick=function(){ if(!current.F) return; var avail=$("stage").clientWidth-34; S.zoom=Math.max(15,Math.min(150,Math.floor(avail/(current.F*S.pw*PXMM)*100))); persist(); applyZoom(); };
+  $("fit").onclick=function(){ if(!current.F) return; var avail=$("stage").clientWidth-34; S.zoom=Math.max(15,Math.min(150,Math.floor(avail/((current.F*S.pw+2*bleedMM())*PXMM)*100))); persist(); applyZoom(); };
   $("reset").onclick=function(){ coverImg="";backImg="";S.csub="";S.btext=""; $("coverFile").value=""; $("backFile").value=""; S.title="";S.author="";S.text="";bgData="";S.blank={};S.faces=0; $("bgfile").value=""; syncInputs(); run(); };
   $("expPrint").onclick=exportPrint; $("expDie").onclick=exportDie;
   $("expPngA").onclick=function(){ exportPng(0); }; $("expPngB").onclick=function(){ exportPng(1); };
@@ -897,12 +915,17 @@ function saveFile(filename,data,mime){
 function fname(ext){ return (S.title||"折页").replace(/[\\/:*?"<>|]/g,"")+ext; }
 function exportPrint(){
   if(!current.F){ say("先放入文字。"); return; }
-  var F=current.F, tw=F*S.pw, pages="";
-  current.sheets.forEach(function(s){ var c=s.el.cloneNode(true); c.style.clipPath=""; pages+='<section class="pg">'+c.outerHTML+'</section>'; });
+  var F=current.F, tw=F*S.pw, BL=bleedMM(), MK=S.marks?6:0, PW=tw+2*BL+2*MK, PH=S.ph+2*BL+2*MK, pages="";
+  function marks(){ if(!MK) return ""; var L=MK-1.5, o=BL+0.5, m='<svg class="marks" xmlns="http://www.w3.org/2000/svg" width="'+PW+'mm" height="'+PH+'mm" viewBox="0 0 '+PW+' '+PH+'" style="position:absolute;left:0;top:0">';
+    [[MK+BL,MK+BL],[MK+BL+tw,MK+BL],[MK+BL,MK+BL+S.ph],[MK+BL+tw,MK+BL+S.ph]].forEach(function(c,k){ var sx=k%2?1:-1, sy=k<2?-1:1;
+      m+='<line x1="'+c[0]+'" y1="'+(c[1]+sy*o)+'" x2="'+c[0]+'" y2="'+(c[1]+sy*(o+L))+'" stroke="#000" stroke-width="0.2"/><line x1="'+(c[0]+sx*o)+'" y1="'+c[1]+'" x2="'+(c[0]+sx*(o+L))+'" y2="'+c[1]+'" stroke="#000" stroke-width="0.2"/>'; });
+    for(var i=1;i<F;i++){ var x=MK+BL+i*S.pw; m+='<line x1="'+x+'" y1="1" x2="'+x+'" y2="'+(MK-1.5)+'" stroke="#00A0D6" stroke-width="0.2"/><line x1="'+x+'" y1="'+(PH-1)+'" x2="'+x+'" y2="'+(PH-MK+1.5)+'" stroke="#00A0D6" stroke-width="0.2"/>'; }
+    return m+'</svg>'; }
+  current.sheets.forEach(function(s){ var c=s.el.cloneNode(true); c.style.clipPath=""; c.style.position="absolute"; c.style.left=MK+"mm"; c.style.top=MK+"mm"; pages+='<section class="pg">'+c.outerHTML+marks()+'</section>'; });
   var html='<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>'+esc(S.title||"折页")+'</title>'+
     '<link rel="stylesheet" href="'+$("fontlink").href.replace(/&/g,"&amp;")+'">'+(fontHrefs[S.font]?'<link rel="stylesheet" href="'+fontHrefs[S.font].replace(/&/g,"&amp;")+'">':'')+
-    '<style>@page{size:'+tw+'mm '+S.ph+'mm;margin:0}html,body{margin:0;padding:0;background:#fff}'+
-    '.pg{width:'+tw+'mm;height:'+S.ph+'mm;overflow:hidden;break-after:page;page-break-after:always}'+
+    '<style>@page{size:'+PW+'mm '+PH+'mm;margin:0}html,body{margin:0;padding:0;background:#fff}'+
+    '.pg{position:relative;width:'+PW+'mm;height:'+PH+'mm;overflow:hidden;break-after:page;page-break-after:always}'+
     '*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'+SHEET_CSS+'</style></head><body>'+pages+'</body></html>';
   saveFile(fname("-印刷稿.html"),html,"text/html");
 }
@@ -914,7 +937,7 @@ function loadH2C(){
 }
 function exportPng(side){
   if(!current.F){ say("先放入文字。"); return; }
-  var F=current.F, wmm=F*S.pw, hmm=S.ph;
+  var F=current.F, BL=bleedMM(), wmm=F*S.pw+2*BL, hmm=S.ph+2*BL;
   var dpi=Math.min(300,Math.floor(Math.sqrt(15.5e6*645.16/(wmm*hmm)))), scale=dpi/96;
   say("正在生成 PNG，字多时要等十几秒。");
   var holder=document.createElement("div"); holder.style.cssText="position:fixed;left:-100000px;top:0;pointer-events:none";
@@ -930,7 +953,7 @@ function exportPng(side){
     holder.remove();
     if(S.pngclip){
       var out=document.createElement("canvas"); out.width=cv.width; out.height=cv.height; var g=out.getContext("2d"), k=cv.width/wmm;
-      g.beginPath(); sheetPoints(side,F).forEach(function(p,i){ if(i) g.lineTo(p[0]*k,p[1]*k); else g.moveTo(p[0]*k,p[1]*k); }); g.closePath(); g.clip(); g.drawImage(cv,0,0); cv=out;
+      g.beginPath(); sheetPoints(side,F).forEach(function(p,i){ if(i) g.lineTo((p[0]+BL)*k,(p[1]+BL)*k); else g.moveTo((p[0]+BL)*k,(p[1]+BL)*k); }); g.closePath(); g.clip(); g.drawImage(cv,0,0); cv=out;
     }
     return new Promise(function(ok,no){ cv.toBlob(function(b){ b?ok(b):no(new Error("blob")); },"image/png"); });
   }).then(function(blob){
@@ -939,10 +962,12 @@ function exportPng(side){
 }
 function exportDie(){
   if(!current.F){ say("先放入文字。"); return; }
-  var F=current.F, tw=F*S.pw, H=S.ph, gap=12, svg='<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="'+tw+'mm" height="'+(H*2+gap)+'mm" viewBox="0 0 '+tw+' '+(H*2+gap)+'">\n';
+  var F=current.F, tw=F*S.pw, H=S.ph, BL=bleedMM(), TW=tw+2*BL, TH=H+2*BL, gap=12, svg='<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="'+TW+'mm" height="'+(TH*2+gap)+'mm" viewBox="0 0 '+TW+' '+(TH*2+gap)+'">\n<!-- 坐标与印刷稿一致：原点在含出血的纸角。cut=刀线，fold=折线，bleed=含出血的纸边 -->\n';
   [0,1].forEach(function(side){
-    svg+='<g id="'+(side?"back":"front")+'" transform="translate(0 '+(side*(H+gap))+')">\n<path id="'+(side?"back":"front")+'-cut" d="'+pathD(sheetPoints(side,F))+'" fill="none" stroke="#E6007E" stroke-width="0.25"/>\n';
-    for(var i=1;i<F;i++) svg+='<line class="fold" x1="'+i*S.pw+'" y1="0" x2="'+i*S.pw+'" y2="'+H+'" stroke="#00A0D6" stroke-width="0.25" stroke-dasharray="2 1.5"/>\n';
+    svg+='<g id="'+(side?"back":"front")+'" transform="translate('+BL+' '+(BL+side*(TH+gap))+')">\n';
+    if(BL) svg+='<rect class="bleed" x="'+(-BL)+'" y="'+(-BL)+'" width="'+TW+'" height="'+TH+'" fill="none" stroke="#999" stroke-width="0.15"/>\n';
+    svg+='<path id="'+(side?"back":"front")+'-cut" d="'+pathD(sheetPoints(side,F))+'" fill="none" stroke="#E6007E" stroke-width="0.25"/>\n';
+    for(var i=1;i<F;i++) svg+='<line class="fold" x1="'+i*S.pw+'" y1="'+(-BL)+'" x2="'+i*S.pw+'" y2="'+(H+BL)+'" stroke="#00A0D6" stroke-width="0.25" stroke-dasharray="2 1.5"/>\n';
     svg+='</g>\n';
   });
   svg+='</svg>';
