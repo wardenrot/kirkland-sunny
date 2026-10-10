@@ -439,6 +439,44 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
     </fieldset>
 
     <fieldset class="tkonly">
+      <legend>镭射工艺</legend>
+      <label class="check"><input id="tkLzOn" type="checkbox"> 正面用镭射材料（预览里模拟闪光）</label>
+      <div id="tkLzBox">
+        <p class="note">镭射材料整面都闪。垫了白墨的地方盖住闪光，颜色照常；不垫白的地方镭射透出来。这里定的就是哪里垫白。</p>
+        <label for="tkLzPat">纹样（只是预览，实际纹样在印厂的材料册里选）</label>
+        <select id="tkLzPat"><option value="rainbow">素面彩虹</option><option value="pillar">光柱</option><option value="glass">碎玻璃</option><option value="star">星点</option></select>
+        <div class="row">
+          <div><label for="tkLzPaper">纸色底</label><select id="tkLzPaper"><option value="white">垫白</option><option value="tint">带色镭射</option><option value="bare">纯镭射（不印纸色）</option></select></div>
+          <div><label for="tkLzImg">底图</label><select id="tkLzImg"><option value="white">垫白</option><option value="laser">露镭射</option></select></div>
+        </div>
+        <div class="row3">
+          <div><label for="tkLzTitle">标题</label><select id="tkLzTitle"><option value="white">垫白</option><option value="laser">带色镭射</option><option value="bare">镂空纯镭射</option></select></div>
+          <div><label for="tkLzText">其余文字</label><select id="tkLzText"><option value="white">垫白</option><option value="laser">带色镭射</option><option value="bare">镂空纯镭射</option></select></div>
+          <div><label for="tkLzFrame">内框线</label><select id="tkLzFrame"><option value="white">垫白</option><option value="laser">带色镭射</option><option value="bare">镂空纯镭射</option></select></div>
+        </div>
+        <div class="row">
+          <div><label for="tkLzTint">副券底色</label><select id="tkLzTint"><option value="white">垫白</option><option value="laser">露镭射</option></select></div>
+          <div><label for="tkLzChoke">白墨内缩 mm</label><input id="tkLzChoke" type="number" min="0" max="0.5" step="0.05"></div>
+        </div>
+        <p class="note">带色镭射：照常印色，下面不垫白，颜色带金属感。镂空纯镭射：不印色也不垫白，周围要有垫白的底才显得出形状。条码固定垫白。</p>
+        <label for="tkLzMask">自由蒙版（黑白图，铺满整张票）</label>
+        <input id="tkLzMask" type="file" accept="image/*">
+        <label for="tkLzMmode">蒙版里的深色代表</label>
+        <select id="tkLzMmode"><option value="reveal">这里露出镭射（挖掉白墨）</option><option value="cover">这里垫白（盖住镭射）</option></select>
+        <div class="row3">
+          <div><label for="tkLzMx">左右</label><input id="tkLzMx" type="range" min="0" max="100" step="1"></div>
+          <div><label for="tkLzMy">上下</label><input id="tkLzMy" type="range" min="0" max="100" step="1"></div>
+          <div><label for="tkLzMz">放大</label><input id="tkLzMz" type="range" min="100" max="300" step="5"></div>
+        </div>
+        <div class="btns"><button class="ghost" id="tkLzMaskClear" type="button">移除蒙版</button></div>
+        <label class="check"><input id="tkLzInv" type="checkbox"> 白墨稿反相（白色代表印白墨；默认黑色代表印白墨）</label>
+        <div class="btns"><button id="tkExpWhite" type="button">导出白墨稿 PNG</button></div>
+        <p class="note" id="tkLzMsg" role="status"></p>
+        <p class="note">交印厂三样：彩色稿（「导出 PNG 正面」，关掉按模切裁形；或印刷稿 HTML）、白墨稿、刀线 SVG。白墨稿和不裁形的 PNG 正面同尺寸、同坐标，都含出血。开了镭射后，彩色稿里不会有模拟的闪光，镂空的字也不印色。镭射只做正面，反面照常。黑白哪个代表印白，各家印厂约定不同，下单前问一句。</p>
+      </div>
+    </fieldset>
+
+    <fieldset class="tkonly">
       <legend>印刷与导出</legend>
       <div class="row">
         <div><label for="tkBleed">出血 mm（印厂一般要 3）</label><input id="tkBleed" type="number" min="0" max="6" step="0.5"></div>
@@ -537,6 +575,7 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
     s.font = "Noto Serif SC"; s.fs = 8;
     s.code = "KS1031{n}"; s.codeText = true; s.serialT = "No. {n}"; s.start = 1; s.digits = 4; s.count = 1; s.barH = 10;
     s.img = [{ op: 100, x: 50, y: 50, z: 100 }, { op: 100, x: 50, y: 50, z: 100 }];
+    s.lz = { on: false, pat: "rainbow", paper: "white", img: "white", tint: "white", title: "bare", text: "white", frame: "bare", choke: 0.15, inv: false, mmode: "reveal", mx: 50, my: 50, mz: 100 };
     s.cells = defCells(); s.cur = "f:main";
     return s;
   }
@@ -547,10 +586,12 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
       HAD = true;
       for (var k0 in T) if (k0 in sv && typeof sv[k0] === typeof T[k0]) T[k0] = sv[k0];
       var dc = defCells(); for (var k1 in dc) if (!T.cells[k1]) T.cells[k1] = dc[k1];
+      var dl = defState().lz; for (var k2 in dl) if (!(k2 in T.lz)) T.lz[k2] = dl[k2];
     }
   } catch (e) {}
   function save() { try { localStorage.setItem(KEY, JSON.stringify(T)); } catch (e) {} }
   var IMG = [null, null]; /* 底图只留在内存里 */
+  var MASK = null; /* 白墨自由蒙版：{cv: 原图画布, a: 深色→不透明的 dataURL, w, h} */
 
   /* ---------- 几何：规范坐标 u 沿短边 0..S，v 沿长边 0..L ---------- */
   function geo(p) {
@@ -698,7 +739,7 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
   }
 
   /* ---------- 版面 ---------- */
-  var TKCSS = ".tkbleed{position:relative;overflow:hidden;background:var(--tk-paper,#F6E8D6);color:var(--tk-ink,#1A1A1A);line-height:1.4}.tkbleed .tkbg{position:absolute;inset:0;background-repeat:no-repeat;background-size:cover;background-position:center}.tkbleed .tktint{position:absolute}.tkface{position:absolute}.tkframe{position:absolute;box-sizing:border-box;border:.3mm solid var(--tk-accent,#B3261E)}.tkframe::after{content:'';position:absolute;inset:.6mm;border:.12mm solid var(--tk-accent,#B3261E)}.tkcell{position:absolute;overflow:hidden}.tkin{position:absolute;left:0;top:0;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;transform-origin:0 0}.tkin.a-left{text-align:left;align-items:flex-start}.tkin.a-center{text-align:center;align-items:center}.tkin.a-right{text-align:right;align-items:flex-end}.tkin>*{flex:none;max-width:100%;box-sizing:border-box}.tkin .k{font-family:'Noto Sans SC',sans-serif;font-size:.7em;letter-spacing:.28em;font-weight:700;color:var(--tk-accent,#B3261E);margin-bottom:.55em}.tkin h2{font-weight:900;font-size:2.3em;line-height:1.15;margin:0;letter-spacing:.03em}.tkin .s{font-size:1em;margin-top:.45em}.tkin .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(17mm,1fr));gap:.8em 1.1em;margin-top:1.1em;width:100%}.tkin .kv .l{display:block;font-family:'Noto Sans SC',sans-serif;font-size:.66em;letter-spacing:.14em;font-weight:700;color:var(--tk-accent,#B3261E)}.tkin .kv .v{display:block;font-size:1.15em;font-weight:700;line-height:1.3}.tkin p{margin:.55em 0 0;font-size:.92em;line-height:1.55}.tkin .sp{flex:1 1 0;min-height:.5em}.tkin .bc{margin-top:.4em}.tkin .bc img{display:block}.tkin .bc .hr{font-family:'Noto Sans SC',sans-serif;font-size:5.5pt;line-height:1.2;letter-spacing:.22em;text-align:center;margin-top:.5mm;color:#000}.tkin .bc.box .hr{background:#fff;margin-top:0;padding:.3mm 0 .5mm}.tkin .no{font-family:'Noto Sans SC',sans-serif;font-weight:700;font-size:.95em;letter-spacing:.1em;color:var(--tk-accent,#B3261E);margin-top:.5em}.tkin .f{font-size:.72em;margin-top:.55em;opacity:.85}.tkin .cm{font-family:'Noto Sans SC',sans-serif;font-size:4.2pt;line-height:1.2;letter-spacing:.12em;margin-top:1mm;opacity:.75}";
+  var TKCSS = ".tkbleed{position:relative;overflow:hidden;background:var(--tk-paper,#F6E8D6);color:var(--tk-ink,#1A1A1A);line-height:1.4}.tkbleed .tkbg{position:absolute;inset:0;background-repeat:no-repeat;background-size:cover;background-position:center}.tkbleed .tktint{position:absolute}.tkface{position:absolute}.tkframe{position:absolute;box-sizing:border-box;border:.3mm solid var(--tk-accent,#B3261E)}.tkframe::after{content:'';position:absolute;inset:.6mm;border:.12mm solid var(--tk-accent,#B3261E)}.tkcell{position:absolute;overflow:hidden}.tkin{position:absolute;left:0;top:0;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;transform-origin:0 0}.tkin.a-left{text-align:left;align-items:flex-start}.tkin.a-center{text-align:center;align-items:center}.tkin.a-right{text-align:right;align-items:flex-end}.tkin>*{flex:none;max-width:100%;box-sizing:border-box}.tkin .k{font-family:'Noto Sans SC',sans-serif;font-size:.7em;letter-spacing:.28em;font-weight:700;color:var(--tk-accent,#B3261E);margin-bottom:.55em}.tkin h2{font-weight:900;font-size:2.3em;line-height:1.15;margin:0;letter-spacing:.03em}.tkin .s{font-size:1em;margin-top:.45em}.tkin .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(17mm,1fr));gap:.8em 1.1em;margin-top:1.1em;width:100%}.tkin .kv .l{display:block;font-family:'Noto Sans SC',sans-serif;font-size:.66em;letter-spacing:.14em;font-weight:700;color:var(--tk-accent,#B3261E)}.tkin .kv .v{display:block;font-size:1.15em;font-weight:700;line-height:1.3}.tkin p{margin:.55em 0 0;font-size:.92em;line-height:1.55}.tkin .sp{flex:1 1 0;min-height:.5em}.tkin .bc{margin-top:.4em}.tkin .bc img{display:block}.tkin .bc .hr{font-family:'Noto Sans SC',sans-serif;font-size:5.5pt;line-height:1.2;letter-spacing:.22em;text-align:center;margin-top:.5mm;color:#000}.tkin .bc.box .hr{background:#fff;margin-top:0;padding:.3mm 0 .5mm}.tkin .no{font-family:'Noto Sans SC',sans-serif;font-weight:700;font-size:.95em;letter-spacing:.1em;color:var(--tk-accent,#B3261E);margin-top:.5em}.tkin .f{font-size:.72em;margin-top:.55em;opacity:.85}.tkframe.lz{border-image:linear-gradient(115deg,#f58ac0,#f5d36a,#7fe6a4,#7cc4ff,#b99aff,#f58ac0) 1}.tkframe.lz::after{border-image:linear-gradient(295deg,#f58ac0,#f5d36a,#7fe6a4,#7cc4ff,#b99aff,#f58ac0) 1}.tkbleed .tklz,.tkbleed .tkmk{position:absolute;inset:0}.tkbleed .tkmk{-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}.tkin .cm{font-family:'Noto Sans SC',sans-serif;font-size:4.2pt;line-height:1.2;letter-spacing:.12em;margin-top:1mm;opacity:.75}";
   var st = mk("style"); st.id = "tkcss"; st.textContent = TKCSS; document.head.appendChild(st);
 
   var STAT = { minX: null, badCode: false, hasBar: false };
@@ -742,25 +783,60 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
     var sd = Math.max(pm + patDepth(p.eL, pitch) + (p.notchAt === "lr" ? +p.notchR * 0.7 : 0), scoop, g.pr ? g.pr + 1.5 : 0);
     return { u0: sd, v0: s.v0 + top, u1: g.S - sd, v1: s.v1 - bot };
   }
-  function buildFace(side, idx, exp) {
+  /* ---------- 镭射：预览模拟、印刷稿、白墨稿共用同一套版面 ---------- */
+  var RB = "#f7a8d0 0mm,#fbe38e 9mm,#9df0b8 18mm,#8fd3ff 27mm,#c3a6ff 36mm,#f7a8d0 45mm";
+  function lzCSS(pat) {
+    var base = "repeating-linear-gradient(115deg," + RB + ")";
+    if (pat === "pillar") return "repeating-linear-gradient(90deg,rgba(255,255,255,.8) 0mm,rgba(255,255,255,0) 1.2mm,rgba(255,255,255,0) 2.4mm,rgba(255,255,255,.8) 3.6mm),repeating-linear-gradient(90deg," + RB + ")";
+    if (pat === "glass") return "repeating-conic-gradient(from 20deg,rgba(255,255,255,.6) 0deg 25deg,rgba(255,255,255,0) 25deg 70deg,rgba(90,110,160,.28) 70deg 100deg,rgba(255,255,255,0) 100deg 120deg) 0 0/13mm 10mm," + base;
+    if (pat === "star") return "radial-gradient(circle,rgba(255,255,255,.95) 0,rgba(255,255,255,.95) .32mm,rgba(255,255,255,0) .6mm) 0 0/4mm 4mm,radial-gradient(circle,rgba(255,255,255,.85) 0,rgba(255,255,255,.85) .22mm,rgba(255,255,255,0) .5mm) 2mm 2mm/4mm 4mm," + base;
+    return base;
+  }
+  function rgba(hex, a) { var m = /^#([0-9a-f]{6})$/i.exec(hex || ""), n = m ? parseInt(m[1], 16) : 0; return "rgba(" + (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")"; }
+  /* 预览里把一段字画成"油墨压在镭射上"（ink 给色）或"镂空纯镭射"（ink 为空） */
+  function lzText(e, ink) {
+    var rb = "repeating-linear-gradient(115deg,#e0569f 0mm,#e0a92a 5mm,#2fbf6c 10mm,#2b96e6 15mm,#8a62f0 20mm,#e0569f 25mm)";
+    e.style.backgroundImage = ink ? "linear-gradient(" + rgba(ink, 0.62) + "," + rgba(ink, 0.62) + ")," + rb : rb;
+    e.style.webkitBackgroundClip = "text"; e.style.backgroundClip = "text";
+    e.style.webkitTextFillColor = "transparent"; e.style.color = "transparent";
+  }
+  /* mode：view=预览（模拟闪光）；print=印刷用彩色稿；white=白墨稿（黑=印白墨） */
+  function buildFace(side, idx, exp, mode) {
     var sh = shapes(T, side), g = sh.g, X = sh.X, b = bleed();
+    var LZ = T.lz.on && side === 0 ? T.lz : null, sim = LZ && mode === "view", wm = LZ && mode === "white", pr = LZ && mode === "print";
+    function wk(rule) { return rule === "white" ? "#000" : "#fff"; }
     var el = mk("div", "tkbleed");
     el.style.cssText = "width:" + f2(X.W + 2 * b) + "mm;height:" + f2(X.H + 2 * b) + "mm;--tk-paper:" + T.paper + ";--tk-ink:" + T.ink + ";--tk-accent:" + T.accent + ";font-family:'" + T.font + "','Noto Serif SC',serif;font-size:" + T.fs + "pt";
+    if (wm) el.style.background = wk(LZ.paper);
+    else if (pr && LZ.paper === "bare") el.style.background = "transparent";
+    else if (sim && LZ.paper !== "white") el.style.background = (LZ.paper === "tint" ? "linear-gradient(" + rgba(T.paper, 0.6) + "," + rgba(T.paper, 0.6) + ")," : "") + lzCSS(LZ.pat);
     var im = IMG[side], io = T.img[side];
     if (im) {
       var bg = mk("div", "tkbg tkbg" + side), kk = (Math.max((X.W + 2 * b) / im.w, (X.H + 2 * b) / im.h) * io.z) / 100;
-      if (!exp) bg.style.backgroundImage = "url(" + im.url + ")";
-      bg.style.backgroundSize = f2(im.w * kk) + "mm " + f2(im.h * kk) + "mm";
-      bg.style.backgroundPosition = io.x + "% " + io.y + "%";
-      bg.style.opacity = io.op / 100;
+      if (wm) { bg.className = "tklz"; bg.style.background = wk(LZ.img); }
+      else {
+        if (sim && LZ.img === "laser") { var un = mk("div", "tklz"); un.style.background = lzCSS(LZ.pat); el.appendChild(un); bg.style.mixBlendMode = "multiply"; }
+        if (!exp) bg.style.backgroundImage = "url(" + im.url + ")";
+        bg.style.backgroundSize = f2(im.w * kk) + "mm " + f2(im.h * kk) + "mm";
+        bg.style.backgroundPosition = io.x + "% " + io.y + "%";
+        bg.style.opacity = io.op / 100;
+      }
       el.appendChild(bg);
     }
     if (T.tintOn) g.secs.forEach(function (s) {
       if (s.role === "main") return;
       var r = X.rect(-b, s.v0 === 0 ? -b : s.v0, g.S + b, s.v1 === g.L ? g.L + b : s.v1), t = mk("div", "tktint");
-      t.style.cssText = "left:" + f2(r.x + b) + "mm;top:" + f2(r.y + b) + "mm;width:" + f2(r.w) + "mm;height:" + f2(r.h) + "mm;background:" + T.tint;
+      t.style.cssText = "left:" + f2(r.x + b) + "mm;top:" + f2(r.y + b) + "mm;width:" + f2(r.w) + "mm;height:" + f2(r.h) + "mm";
+      t.style.background = wm ? wk(LZ.tint) : sim && LZ.tint === "laser" ? "linear-gradient(" + rgba(T.tint, 0.6) + "," + rgba(T.tint, 0.6) + ")," + lzCSS(LZ.pat) : T.tint;
       el.appendChild(t);
     });
+    if (sim && MASK) { /* 蒙版在预览里：深色处露出镭射，或深色处盖回白墨 */
+      var mk2 = mk("div", "tkmk"), mkk = (Math.max((X.W + 2 * b) / MASK.w, (X.H + 2 * b) / MASK.h) * LZ.mz) / 100, ms = f2(MASK.w * mkk) + "mm " + f2(MASK.h * mkk) + "mm", mp = LZ.mx + "% " + LZ.my + "%";
+      mk2.style.background = LZ.mmode === "reveal" ? lzCSS(LZ.pat) : LZ.paper === "bare" ? "#fff" : T.paper;
+      mk2.style.webkitMaskImage = "url(" + MASK.a + ")"; mk2.style.maskImage = "url(" + MASK.a + ")";
+      mk2.style.webkitMaskSize = ms; mk2.style.maskSize = ms; mk2.style.webkitMaskPosition = mp; mk2.style.maskPosition = mp;
+      el.appendChild(mk2);
+    }
     var face = mk("div", "tkface");
     face.style.cssText = "left:" + b + "mm;top:" + b + "mm;width:" + f2(X.W) + "mm;height:" + f2(X.H) + "mm";
     el.appendChild(face);
@@ -770,6 +846,9 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
       if (T.frame && s.role === "main") {
         var e = Math.min(2, T.pm * 0.4), fr = X.rect(q.u0 - e, q.v0 - e, q.u1 + e, q.v1 + e), fe = mk("div", "tkframe");
         fe.style.cssText = "left:" + f2(fr.x) + "mm;top:" + f2(fr.y) + "mm;width:" + f2(fr.w) + "mm;height:" + f2(fr.h) + "mm";
+        if (wm) fe.style.setProperty("--tk-accent", wk(LZ.frame));
+        else if (pr && LZ.frame === "bare") fe.style.visibility = "hidden";
+        else if (sim && LZ.frame === "bare") fe.className += " lz";
         face.appendChild(fe);
         q = { u0: q.u0 + 1.6, v0: q.v0 + 1.6, u1: q.u1 - 1.6, v1: q.v1 - 1.6 };
       }
@@ -781,7 +860,21 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
       ce.style.cssText = "left:" + f2(r.x) + "mm;top:" + f2(r.y) + "mm;width:" + f2(r.w) + "mm;height:" + f2(r.h) + "mm";
       inn.style.cssText = "width:" + f2(iw) + "mm;height:" + f2(ih) + "mm;font-size:" + clamp(c.scale, 40, 250, 100) + "%" + (rot === 90 ? ";transform:translate(" + f2(r.w) + "mm,0) rotate(90deg)" : rot === -90 ? ";transform:translate(0," + f2(r.h) + "mm) rotate(-90deg)" : "");
       var dark = lum(T.tintOn && s.role !== "main" ? T.tint : T.paper) < 0.6;
-      inn.innerHTML = cellHTML(key, s.role, side, iw, idx, !!im || dark);
+      inn.innerHTML = cellHTML(key, s.role, side, iw, idx, !!im || dark || !!LZ);
+      if (LZ) {
+        var h2 = inn.querySelector("h2"), rest = [].slice.call(inn.querySelectorAll(".k,.s,.kv .l,.kv .v,p,.no,.f,.cm"));
+        if (wm) {
+          inn.style.color = wk(LZ.text); inn.style.setProperty("--tk-accent", wk(LZ.text));
+          if (h2) h2.style.color = wk(LZ.title);
+          [].forEach.call(inn.querySelectorAll(".bc"), function (bc) { bc.style.background = "#000"; bc.querySelector("img").style.opacity = 0; var hr = bc.querySelector(".hr"); if (hr) { hr.style.color = "#000"; hr.style.background = "#000"; } });
+        } else if (pr) { /* 镂空的字不印色 */
+          if (h2 && LZ.title === "bare") h2.style.visibility = "hidden";
+          if (LZ.text === "bare") rest.forEach(function (e2) { e2.style.visibility = "hidden"; });
+        } else {
+          if (h2 && LZ.title !== "white") lzText(h2, LZ.title === "laser" ? T.ink : null);
+          if (LZ.text !== "white") rest.forEach(function (e2) { lzText(e2, LZ.text === "laser" ? (/^(k|l|no)$/.test(e2.className) ? T.accent : T.ink) : null); });
+        }
+      }
       ce.appendChild(inn); face.appendChild(ce);
       cells.push({ el: inn, name: (side ? "反面" : "正面") + roleName(g, s.role) });
     });
@@ -796,8 +889,8 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
     STAT = { minX: null, badCode: false, hasBar: false };
     R = { faces: [], boxes: [] };
     [0, 1].forEach(function (side) {
-      var f = buildFace(side, 0, false), col = mk("div"), lab = mk("p", "sidelabel"), box = mk("div", "scalebox"), sc = mk("div", "scaler");
-      lab.textContent = side ? "反面（左右翻转后）" : "正面";
+      var f = buildFace(side, 0, false, "view"), col = mk("div"), lab = mk("p", "sidelabel"), box = mk("div", "scalebox"), sc = mk("div", "scaler");
+      lab.textContent = side ? "反面（左右翻转后）" : T.lz.on ? "正面（镭射为模拟效果）" : "正面";
       if (!T.showBleed) f.el.style.clipPath = 'path(evenodd,"' + cutD(f.sh, PX, bleed(), bleed(), T.pstyle === "dots") + '")';
       sc.appendChild(f.el); box.appendChild(sc); col.appendChild(lab); col.appendChild(box); wrap.appendChild(col);
       R.faces.push(f); R.boxes.push({ box: box, sc: sc, side: side });
@@ -851,6 +944,11 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
     if (g.pr && g.pr < 2) fine.push("撕线缺口");
     if (T.pstyle === "dots" && g.perfs.length) fine.push("圆孔撕线");
     if (fine.length) w.push(fine.join("、") + "太细，普通刀模做不了或很贵。交印厂前说明要激光切，或把齿距调到 3.5 mm 以上、撕线改成齿线。");
+    if (T.lz.on) {
+      var L = T.lz, backed = L.paper === "white" || (IMG[0] && L.img === "white");
+      if (!backed && (L.title === "bare" || L.text === "bare")) w.push("镂空的字下面没有垫白，会和周围的镭射融在一起看不见。把纸色底改成垫白，或把字改成垫白、带色镭射。");
+      if (L.text !== "white" && +T.fs < 7) w.push("小字不垫白，印在镭射上很难看清。");
+    }
     var el = $("tkWarn"); el.hidden = !w.length; el.textContent = w.join(" ");
   }
   var tok = 0;
@@ -915,8 +1013,12 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
     $("tkPitchv").textContent = T.pitch + " mm";
     $("tkTintBox").hidden = !T.tintOn;
     [["F", 0], ["B", 1]].forEach(function (s) { var o = T.img[s[1]]; $("tk" + s[0] + "x").value = o.x; $("tk" + s[0] + "y").value = o.y; $("tk" + s[0] + "z").value = o.z; $("tk" + s[0] + "op").value = o.op; $("tk" + s[0] + "opv").textContent = o.op + "%"; });
+    LZB.forEach(function (b) { var e = $(b[0]); if (b[2] === "b") e.checked = !!T.lz[b[1]]; else e.value = T.lz[b[1]]; });
+    $("tkLzBox").hidden = !T.lz.on;
     cellSync(); thumbs();
   }
+  var LZB = [["tkLzOn", "on", "b"], ["tkLzPat", "pat", "s"], ["tkLzPaper", "paper", "s"], ["tkLzImg", "img", "s"], ["tkLzTint", "tint", "s"], ["tkLzTitle", "title", "s"], ["tkLzText", "text", "s"], ["tkLzFrame", "frame", "s"],
+    ["tkLzChoke", "choke", "n", 0, 0.5, 0.15], ["tkLzInv", "inv", "b"], ["tkLzMmode", "mmode", "s"], ["tkLzMx", "mx", "n", 0, 100, 50], ["tkLzMy", "my", "n", 0, 100, 50], ["tkLzMz", "mz", "n", 100, 300, 100]];
   function setMode(on) {
     T.on = !!on; save();
     document.querySelector(".app").classList.toggle("tkmode", T.on);
@@ -980,6 +1082,38 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
         fr.readAsDataURL(file);
       };
     });
+    LZB.forEach(function (b) {
+      var e = $(b[0]), live = e.type === "range";
+      e[live ? "oninput" : "onchange"] = function () {
+        T.lz[b[1]] = b[2] === "b" ? this.checked : b[2] === "n" ? clamp(this.value, b[3], b[4], b[5]) : this.value;
+        if (b[2] === "n" && !live) this.value = T.lz[b[1]];
+        $("tkLzBox").hidden = !T.lz.on;
+        if (b[1] === "inv" || b[1] === "choke") save(); else if (live) later(); else refresh();
+      };
+    });
+    $("tkLzMask").onchange = function () {
+      var file = this.files && this.files[0]; if (!file) return;
+      var fr = new FileReader();
+      fr.onload = function () {
+        var im = new Image();
+        im.onload = function () {
+          var k = Math.min(1, 3000 / Math.max(im.naturalWidth, im.naturalHeight)), cv = mk("canvas"), w = cv.width = Math.round(im.naturalWidth * k), h = cv.height = Math.round(im.naturalHeight * k);
+          var cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, w, h); cx.drawImage(im, 0, 0, w, h);
+          var a = mk("canvas"); a.width = w; a.height = h;
+          var ax = a.getContext("2d"), d = cx.getImageData(0, 0, w, h), p = d.data;
+          for (var i = 0; i < p.length; i += 4) { p[i + 3] = 255 - Math.round(0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]); p[i] = p[i + 1] = p[i + 2] = 0; }
+          ax.putImageData(d, 0, 0);
+          MASK = { cv: cv, a: a.toDataURL("image/png"), w: w, h: h };
+          T.lz.mx = 50; T.lz.my = 50; T.lz.mz = 100; sync(); refresh();
+          $("tkLzMsg").textContent = "蒙版已载入。刷新后要重新选。";
+        };
+        im.onerror = function () { $("tkLzMsg").textContent = "这张图读不出来。换一张 PNG 或 JPG。"; };
+        im.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    };
+    $("tkLzMaskClear").onclick = function () { MASK = null; $("tkLzMask").value = ""; refresh(); };
+    $("tkExpWhite").onclick = expWhite;
     $("tkImgClear").onclick = function () { IMG = [null, null]; $("tkImgF").value = ""; $("tkImgB").value = ""; refresh(); };
     $("tkZoom").oninput = function () { T.zoom = +this.value; save(); layout(); };
     $("tkFit").onclick = function () {
@@ -988,7 +1122,7 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
       var one = Math.min((stg.clientWidth - 34) / w, (stg.clientHeight - 70) / h), two = Math.min((stg.clientWidth - 70) / (2 * w), (stg.clientHeight - 70) / h);
       T.zoom = Math.max(30, Math.min(300, Math.floor((Math.max(two, Math.min(one, (stg.clientWidth - 34) / w * 0.999)) * 100) / 5) * 5)); save(); layout();
     };
-    $("tkReset").onclick = function () { var on = T.on, z = T.zoom; T = defState(); T.on = on; T.zoom = z; IMG = [null, null]; $("tkImgF").value = ""; $("tkImgB").value = ""; sync(); refresh(); };
+    $("tkReset").onclick = function () { var on = T.on, z = T.zoom; T = defState(); T.on = on; T.zoom = z; IMG = [null, null]; MASK = null; $("tkLzMask").value = ""; $("tkImgF").value = ""; $("tkImgB").value = ""; sync(); refresh(); };
     $("tkExpPrint").onclick = expPrint; $("tkExpDie").onclick = expDie;
     $("tkExpPngA").onclick = function () { expPng(0); }; $("tkExpPngB").onclick = function () { expPng(1); };
     $("modeZy").onclick = function () { setMode(false); }; $("modeTk").onclick = function () { setMode(true); };
@@ -1020,7 +1154,7 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
     }));
   }
   window.__bg2img = bg2img;
-  function msg(t) { $("tkExpMsg").textContent = t; }
+  function msg(t) { $("tkExpMsg").textContent = t; $("tkLzMsg").textContent = t; }
   function saveFile(name, data, type) {
     var dl = window.claude && typeof window.claude.use === "function" ? window.claude.use("downloads") : Promise.resolve(null);
     return Promise.resolve(dl).then(function (d) {
@@ -1050,7 +1184,7 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
   function expPrint() {
     var b = bleed(), a = T.marks ? 6 : 0, n = Math.round(clamp(T.count, 1, 300, 1)), body = "", pw = 0, ph = 0;
     for (var i = 0; i < n; i++) [0, 1].forEach(function (side) {
-      var f = buildFace(side, i, true);
+      var f = buildFace(side, i, true, "print");
       pw = f.sh.X.W + 2 * b + 2 * a; ph = f.sh.X.H + 2 * b + 2 * a;
       f.el.style.position = "absolute"; f.el.style.left = a + "mm"; f.el.style.top = a + "mm";
       body += '<section class="pg">' + f.el.outerHTML + (a ? marksSVG(f.sh, a, pw, ph) : "") + "</section>";
@@ -1083,8 +1217,14 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
   }
   function expDie() { saveFile(fname("-票根刀线.svg"), dieSVG(), "image/svg+xml"); }
   var h2c = null;
+  function loadH2C() {
+    return window.html2canvas ? Promise.resolve() : h2c || (h2c = new Promise(function (ok, no) {
+      var sc = mk("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+      sc.onload = function () { ok(); }; sc.onerror = function () { h2c = null; no(new Error("load")); }; document.head.appendChild(sc);
+    }));
+  }
   function expPng(side) {
-    var b = bleed(), f = buildFace(side, 0, false), tw = f.sh.X.W + 2 * b, th = f.sh.X.H + 2 * b;
+    var b = bleed(), f = buildFace(side, 0, false, "print"), tw = f.sh.X.W + 2 * b, th = f.sh.X.H + 2 * b;
     var dpi = Math.min(600, Math.floor(Math.sqrt(16e6 / ((tw / 25.4) * (th / 25.4))))), holder = mk("div");
     msg("正在生成 PNG。");
     holder.style.cssText = "position:fixed;left:-100000px;top:0;pointer-events:none";
@@ -1103,10 +1243,7 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
       im.src = cv.toDataURL("image/png"); im.style.imageRendering = "pixelated";
     });
     holder.appendChild(f.el); document.body.appendChild(holder);
-    (window.html2canvas ? Promise.resolve() : h2c || (h2c = new Promise(function (ok, no) {
-      var sc = mk("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-      sc.onload = function () { ok(); }; sc.onerror = function () { h2c = null; no(new Error("load")); }; document.head.appendChild(sc);
-    }))).then(function () {
+    loadH2C().then(function () {
       return bg2img(f.el).then(function () { return window.html2canvas(f.el, { scale: dpi / 96, backgroundColor: null, useCORS: true, logging: false }); });
     }).then(function (cv) {
       holder.remove();
@@ -1122,6 +1259,53 @@ input[type=color]{width:100%;height:36px;padding:2px;background:var(--field);bor
         var t = $("tkExpMsg").textContent; if (/^已导出/.test(t)) msg(t + "（" + dpi + " dpi）");
       });
     }).catch(function () { holder.remove(); msg("PNG 没生成出来。可能是网络加载不到绘图组件。改用印刷稿 HTML。"); });
+  }
+
+  /* 白墨稿：和「PNG 正面（不裁形）」同尺寸、同坐标。黑 = 印白墨。 */
+  function expWhite() {
+    if (!T.lz.on) { msg("先勾选「正面用镭射材料」。"); return; }
+    var L = T.lz, b = bleed(), f = buildFace(0, 0, false, "white"), tw = f.sh.X.W + 2 * b, th = f.sh.X.H + 2 * b;
+    var dpi = Math.min(600, Math.floor(Math.sqrt(16e6 / ((tw / 25.4) * (th / 25.4))))), holder = mk("div");
+    msg("正在生成白墨稿。");
+    holder.style.cssText = "position:fixed;left:-100000px;top:0;pointer-events:none";
+    f.el.style.letterSpacing = "0.001px";
+    f.el.querySelectorAll(".tkcell,.tkin").forEach(function (e) { e.style.overflow = "visible"; });
+    holder.appendChild(f.el); document.body.appendChild(holder);
+    var o = f.el.getBoundingClientRect(), bars = [].map.call(f.el.querySelectorAll(".bc"), function (e) { var r = e.getBoundingClientRect(); return [(r.left - o.left) / o.width, (r.top - o.top) / o.height, r.width / o.width, r.height / o.height]; });
+    loadH2C().then(function () {
+      return window.html2canvas(f.el, { scale: dpi / 96, backgroundColor: "#ffffff", useCORS: true, logging: false });
+    }).then(function (cv) {
+      holder.remove();
+      var W = cv.width, H = cv.height, cx = cv.getContext("2d"), d = cx.getImageData(0, 0, W, H), p = d.data, i, md = null;
+      if (MASK) { /* 蒙版按和预览相同的铺法画到同尺寸画布上 */
+        var mc = mk("canvas"); mc.width = W; mc.height = H;
+        var mx = mc.getContext("2d"), k = (Math.max(W / MASK.w, H / MASK.h) * L.mz) / 100, dw = MASK.w * k, dh = MASK.h * k;
+        mx.fillStyle = "#fff"; mx.fillRect(0, 0, W, H);
+        mx.drawImage(MASK.cv, ((W - dw) * L.mx) / 100, ((H - dh) * L.my) / 100, dw, dh);
+        md = mx.getImageData(0, 0, W, H).data;
+      }
+      /* 二值化；有蒙版就在这一步合进去。结果写成：不印白 = 不透明白，印白 = 全透明 */
+      for (i = 0; i < p.length; i += 4) {
+        var ink = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2] < 128;
+        if (md && 0.299 * md[i] + 0.587 * md[i + 1] + 0.114 * md[i + 2] < 128) ink = L.mmode !== "reveal";
+        p[i] = p[i + 1] = p[i + 2] = 255; p[i + 3] = ink ? 0 : 255;
+      }
+      var A = mk("canvas"); A.width = W; A.height = H; A.getContext("2d").putImageData(d, 0, 0);
+      var out = mk("canvas"); out.width = W; out.height = H;
+      var ox = out.getContext("2d"), r = (clamp(L.choke, 0, 0.5, 0.15) * W) / tw, n, a;
+      ox.fillStyle = "#000"; ox.fillRect(0, 0, W, H);
+      ox.drawImage(A, 0, 0);
+      /* 内缩：把"不印白"的区域向外扩 r 像素，白墨就往里收了 */
+      if (r >= 0.5) [r, r / 2].forEach(function (rr) { n = rr === r ? 24 : 12; for (a = 0; a < n; a++) ox.drawImage(A, Math.cos((a / n) * 2 * Math.PI) * rr, Math.sin((a / n) * 2 * Math.PI) * rr); });
+      ox.fillStyle = "#000"; /* 条码永远垫白，不受蒙版和内缩影响 */
+      bars.forEach(function (q) { ox.fillRect(Math.floor(q[0] * W), Math.floor(q[1] * H), Math.ceil(q[2] * W) + 1, Math.ceil(q[3] * H) + 1); });
+      if (L.inv) { ox.globalCompositeOperation = "difference"; ox.fillStyle = "#fff"; ox.fillRect(0, 0, W, H); }
+      return new Promise(function (ok, no) { out.toBlob(function (bl) { bl ? ok(bl) : no(new Error("blob")); }, "image/png"); });
+    }).then(function (bl) {
+      return saveFile(fname("-票根白墨.png"), bl, "image/png").then(function () {
+        var t = $("tkExpMsg").textContent; if (/^已导出/.test(t)) msg(t + "（" + dpi + " dpi，" + (L.inv ? "白" : "黑") + "色 = 印白墨）");
+      });
+    }).catch(function () { holder.remove(); msg("白墨稿没生成出来。可能是网络加载不到绘图组件。"); });
   }
 
   window.__tk = { c128: c128, dieSVG: dieSVG, shapes: shapes, TPL: TPL, tplParams: tplParams, state: function () { return T; } };
